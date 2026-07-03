@@ -107,19 +107,18 @@ For each task:
 
 The next real implementation target is:
 
-src/quantv2/models/rule_baseline.py
+src/quantv2/evaluation/prediction_metrics.py
 
-This module should create a simple deterministic rule-based baseline model for research datasets.
+This module should evaluate deterministic baseline predictions against existing forward-return label columns.
 
-The rule-based baseline layer must ensure:
+The prediction evaluation layer must ensure:
 
-- It only uses feature columns known at or before decision_date.
-- It never uses forward_return columns.
-- It never uses label_date columns.
-- It never uses future prices.
-- It never trains on test data.
+- It only evaluates existing prediction columns and existing forward_return_Nd label columns.
+- It never creates new labels from prices or future data.
+- It never uses label_date columns as features.
+- It never trains a model.
 - It never creates live trades.
 - It never connects to a brokerage.
-- It produces prediction-like outputs that can later be evaluated.
-- It treats no-trade as a valid output.
-- It should be simple, deterministic, and easy to test.
+- It treats no-trade decisions as first-class outputs.
+- It reports directional hit rate, coverage, trade count, no-trade count, and signed forward-return summaries.
+- It must not claim profitability, because transaction costs and execution simulation are not implemented yet.
