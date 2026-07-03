@@ -107,19 +107,21 @@ For each task:
 
 The next real implementation target is:
 
-src/quantv2/backtest/costs.py
+src/quantv2/backtest/simulator.py
 
-This module should provide simple transaction-cost adjustment utilities for baseline prediction research.
+This module should provide a walk-forward baseline evaluation runner for research datasets.
 
-The cost layer must ensure:
+The simulator layer must ensure:
 
-- It only adjusts existing signed forward-return style outputs.
+- It uses existing walk-forward split logic.
+- It uses existing rule-based baseline prediction logic.
+- It uses existing prediction evaluation metrics.
+- It uses existing transaction-cost adjustment utilities.
+- It only evaluates test windows that occur after training windows.
+- It never trains on test data.
 - It never creates new labels from prices or future data.
-- It never trains a model.
-- It never creates live trades.
 - It never connects to a brokerage.
-- It never simulates real execution yet.
-- It never creates PnL or profit claims.
-- It treats transaction costs as research assumptions, not guaranteed real execution costs.
-- It should support simple commission and slippage assumptions in basis points.
-- It should produce cost-adjusted directional return estimates for evaluation only.
+- It never creates live trades.
+- It never creates orders, executions, fills, positions, PnL, or profit claims.
+- It treats cost-adjusted outputs as research return estimates only.
+- It treats no-trade decisions as first-class outputs.
