@@ -104,6 +104,13 @@ For each task:
 
 The next real implementation target is:
 
-src/quantv2/labels/forward_returns.py
+src/quantv2/features/feature_matrix.py
 
-This module should generate 1D, 3D, and 5D forward-return labels from daily OHLCV data while preserving point-in-time correctness.
+This module should combine backward-looking price features with forward-return labels into a clean research dataset while preserving point-in-time correctness.
+
+The feature matrix must ensure:
+
+- Every feature is known at or before the decision timestamp.
+- Every label is generated strictly after the decision timestamp.
+- Rows with missing required features or labels are handled explicitly.
+- No future data leaks into the model input.
