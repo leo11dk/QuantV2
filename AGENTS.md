@@ -104,13 +104,14 @@ For each task:
 
 The next real implementation target is:
 
-src/quantv2/features/feature_matrix.py
+src/quantv2/evaluation/metrics.py
 
-This module should combine backward-looking price features with forward-return labels into a clean research dataset while preserving point-in-time correctness.
+This module should provide basic event-study evaluation metrics for a research dataset containing features and forward-return labels.
 
-The feature matrix must ensure:
+The evaluation layer must ensure:
 
-- Every feature is known at or before the decision timestamp.
-- Every label is generated strictly after the decision timestamp.
-- Rows with missing required features or labels are handled explicitly.
-- No future data leaks into the model input.
+- It never creates new labels from future data.
+- It only summarizes already-created forward-return label columns.
+- It reports count, mean return, median return, hit rate, standard deviation, min, max, and missing-label counts.
+- It can evaluate by ticker or by any categorical grouping column such as event_type, event_direction, or volatility regime.
+- It does not claim strategy profitability, because transaction costs and decision rules are not implemented yet.
