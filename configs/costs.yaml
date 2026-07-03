@@ -1,0 +1,4 @@
+costs:
+  commission_bps: 0.0
+  slippage_bps: 5.0
+  borrow_fee_bps: 0.0

@@ -1,0 +1,8 @@
+universe:
+  name: starter_us_equities
+  symbols:
+    - AAPL
+    - MSFT
+    - NVDA
+    - AMZN
+    - META

@@ -1,0 +1,8 @@
+data:
+  market_data_dir: data/raw
+  processed_data_dir: data/processed
+  label_data_dir: data/labels
+
+timestamps:
+  timezone: America/New_York
+  decision_time: market_close
