@@ -104,21 +104,22 @@ For each task:
 
 The next real implementation target is:
 
-src/quantv2/data/event_data.py
+src/quantv2/experiments/run_experiment.py
 
-This module should load and validate structured event data for the QuantV2 research pipeline.
+This module should wire together the MVP 1 research pipeline end-to-end.
 
-The event data layer must ensure:
+The experiment runner should:
 
-- Required columns are present: ticker, decision_date, event_type, event_direction, event_severity.
-- Dates are parsed consistently.
-- Rows are sorted by ticker and decision_date.
-- Duplicate ticker/decision_date rows are rejected for now.
-- Missing ticker or decision_date values are rejected.
-- Missing required event fields are rejected.
-- Extra metadata columns such as source, source_reliability, notes, or event_time are preserved.
-- The loader must not create labels.
-- The loader must not create price features.
-- The loader must not create trading signals.
-- The loader must not fetch live data yet.
-- The output should be clean enough to pass into src/quantv2/features/event_features.py.
+- Load validated market data from CSV.
+- Optionally load validated structured event data from CSV.
+- Build the feature matrix using existing feature and label builders.
+- Optionally attach event features using existing event feature logic.
+- Build an event-study report using existing report logic.
+- Return clean DataFrames for review.
+- Never fetch live data.
+- Never create live trades.
+- Never connect to a brokerage.
+- Never create autonomous execution logic.
+- Never claim profitability.
+- Never bypass existing validation functions.
+- Never duplicate feature, label, or metric logic that already exists elsewhere.
