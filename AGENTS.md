@@ -104,14 +104,16 @@ For each task:
 
 The next real implementation target is:
 
-src/quantv2/evaluation/metrics.py
+src/quantv2/features/event_features.py
 
-This module should provide basic event-study evaluation metrics for a research dataset containing features and forward-return labels.
+This module should attach structured event information to an existing feature matrix while preserving point-in-time correctness.
 
-The evaluation layer must ensure:
+The event feature layer must ensure:
 
-- It never creates new labels from future data.
-- It only summarizes already-created forward-return label columns.
-- It reports count, mean return, median return, hit rate, standard deviation, min, max, and missing-label counts.
-- It can evaluate by ticker or by any categorical grouping column such as event_type, event_direction, or volatility regime.
-- It does not claim strategy profitability, because transaction costs and decision rules are not implemented yet.
+- Events are joined by ticker and decision_date.
+- Event fields such as event_type, event_direction, and event_severity are treated as features.
+- Event data must already be known at or before the decision timestamp.
+- Future events must never be attached to earlier rows.
+- Duplicate events for the same ticker and decision_date should be handled explicitly.
+- Missing events should remain missing, not filled or guessed.
+- The function must not create labels or trading signals.
