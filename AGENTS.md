@@ -14,14 +14,17 @@ Never use future data, revised data, final outcome data, or post-event knowledge
 
 ## Current MVP
 
-Build MVP 1 only:
+MVP 1 is complete enough to support an end-to-end event-study research loop.
 
-1. Repo scaffold
-2. Data schemas
-3. Forward-return labels
-4. Feature matrix
-5. No-lookahead tests
-6. Basic event-study evaluation
+Current phase: MVP 2 — baseline prediction and honest walk-forward evaluation.
+
+MVP 2 goals:
+
+1. Walk-forward time-series splitting
+2. Rule-based baseline prediction
+3. Baseline prediction evaluation
+4. No-trade handling
+5. Simple cost-aware reporting
 
 Do not build live trading, brokerage integration, autonomous execution, complex AI reasoning, or historical analog models yet.
 
@@ -102,24 +105,21 @@ For each task:
 
 ## Current Priority
 
-MVP 1 is complete enough to support an end-to-end event-study research loop.
-
 The next real implementation target is:
 
-src/quantv2/backtest/walk_forward.py
+src/quantv2/models/rule_baseline.py
 
-This module should create walk-forward time-series train/test splits for research datasets.
+This module should create a simple deterministic rule-based baseline model for research datasets.
 
-The walk-forward layer must ensure:
+The rule-based baseline layer must ensure:
 
-- Training rows always occur before test rows.
-- Test rows never appear in the training set.
-- Splits are based on decision_date, not label dates.
-- Splits preserve point-in-time correctness.
-- The splitter must not shuffle data.
-- The splitter must not create labels.
-- The splitter must not create features.
-- The splitter must not train models.
-- The splitter must not create trading signals.
-- The splitter must not claim profitability.
-- The output should be suitable for later baseline model evaluation.
+- It only uses feature columns known at or before decision_date.
+- It never uses forward_return columns.
+- It never uses label_date columns.
+- It never uses future prices.
+- It never trains on test data.
+- It never creates live trades.
+- It never connects to a brokerage.
+- It produces prediction-like outputs that can later be evaluated.
+- It treats no-trade as a valid output.
+- It should be simple, deterministic, and easy to test.
