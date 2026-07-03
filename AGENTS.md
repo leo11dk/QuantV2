@@ -104,17 +104,19 @@ For each task:
 
 The next real implementation target is:
 
-src/quantv2/evaluation/reports.py
+src/quantv2/data/market_data.py
 
-This module should create basic event-study reports from a research dataset that already contains price features, optional event features, and forward-return labels.
+This module should load and validate daily OHLCV market data for the QuantV2 research pipeline.
 
-The report layer must ensure:
+The market data layer must ensure:
 
-- It only summarizes existing forward-return label columns.
-- It never creates new labels from prices or future data.
-- It never creates trading signals.
-- It never claims strategy profitability.
-- It can produce an overall summary.
-- It can produce grouped summaries by ticker, event_type, event_direction, event_severity, or other provided grouping columns.
-- It should use src/quantv2/evaluation/metrics.py rather than duplicating metric logic.
-- It must not mutate the input DataFrame.
+- Required columns are present: ticker, date, open, high, low, close, volume.
+- Dates are parsed consistently.
+- Rows are sorted by ticker and date.
+- Duplicate ticker/date rows are rejected.
+- Missing or invalid OHLCV values are handled explicitly.
+- The loader must not create labels.
+- The loader must not create features.
+- The loader must not fetch live data yet.
+- The loader must not use future information.
+- The output should be clean enough to pass into feature and label builders.
