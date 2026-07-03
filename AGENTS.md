@@ -104,19 +104,21 @@ For each task:
 
 The next real implementation target is:
 
-src/quantv2/data/market_data.py
+src/quantv2/data/event_data.py
 
-This module should load and validate daily OHLCV market data for the QuantV2 research pipeline.
+This module should load and validate structured event data for the QuantV2 research pipeline.
 
-The market data layer must ensure:
+The event data layer must ensure:
 
-- Required columns are present: ticker, date, open, high, low, close, volume.
+- Required columns are present: ticker, decision_date, event_type, event_direction, event_severity.
 - Dates are parsed consistently.
-- Rows are sorted by ticker and date.
-- Duplicate ticker/date rows are rejected.
-- Missing or invalid OHLCV values are handled explicitly.
+- Rows are sorted by ticker and decision_date.
+- Duplicate ticker/decision_date rows are rejected for now.
+- Missing ticker or decision_date values are rejected.
+- Missing required event fields are rejected.
+- Extra metadata columns such as source, source_reliability, notes, or event_time are preserved.
 - The loader must not create labels.
-- The loader must not create features.
+- The loader must not create price features.
+- The loader must not create trading signals.
 - The loader must not fetch live data yet.
-- The loader must not use future information.
-- The output should be clean enough to pass into feature and label builders.
+- The output should be clean enough to pass into src/quantv2/features/event_features.py.
