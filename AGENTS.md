@@ -102,24 +102,24 @@ For each task:
 
 ## Current Priority
 
+MVP 1 is complete enough to support an end-to-end event-study research loop.
+
 The next real implementation target is:
 
-src/quantv2/experiments/run_experiment.py
+src/quantv2/backtest/walk_forward.py
 
-This module should wire together the MVP 1 research pipeline end-to-end.
+This module should create walk-forward time-series train/test splits for research datasets.
 
-The experiment runner should:
+The walk-forward layer must ensure:
 
-- Load validated market data from CSV.
-- Optionally load validated structured event data from CSV.
-- Build the feature matrix using existing feature and label builders.
-- Optionally attach event features using existing event feature logic.
-- Build an event-study report using existing report logic.
-- Return clean DataFrames for review.
-- Never fetch live data.
-- Never create live trades.
-- Never connect to a brokerage.
-- Never create autonomous execution logic.
-- Never claim profitability.
-- Never bypass existing validation functions.
-- Never duplicate feature, label, or metric logic that already exists elsewhere.
+- Training rows always occur before test rows.
+- Test rows never appear in the training set.
+- Splits are based on decision_date, not label dates.
+- Splits preserve point-in-time correctness.
+- The splitter must not shuffle data.
+- The splitter must not create labels.
+- The splitter must not create features.
+- The splitter must not train models.
+- The splitter must not create trading signals.
+- The splitter must not claim profitability.
+- The output should be suitable for later baseline model evaluation.
