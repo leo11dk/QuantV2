@@ -104,16 +104,17 @@ For each task:
 
 The next real implementation target is:
 
-src/quantv2/features/event_features.py
+src/quantv2/evaluation/reports.py
 
-This module should attach structured event information to an existing feature matrix while preserving point-in-time correctness.
+This module should create basic event-study reports from a research dataset that already contains price features, optional event features, and forward-return labels.
 
-The event feature layer must ensure:
+The report layer must ensure:
 
-- Events are joined by ticker and decision_date.
-- Event fields such as event_type, event_direction, and event_severity are treated as features.
-- Event data must already be known at or before the decision timestamp.
-- Future events must never be attached to earlier rows.
-- Duplicate events for the same ticker and decision_date should be handled explicitly.
-- Missing events should remain missing, not filled or guessed.
-- The function must not create labels or trading signals.
+- It only summarizes existing forward-return label columns.
+- It never creates new labels from prices or future data.
+- It never creates trading signals.
+- It never claims strategy profitability.
+- It can produce an overall summary.
+- It can produce grouped summaries by ticker, event_type, event_direction, event_severity, or other provided grouping columns.
+- It should use src/quantv2/evaluation/metrics.py rather than duplicating metric logic.
+- It must not mutate the input DataFrame.
