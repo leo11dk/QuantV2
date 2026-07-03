@@ -107,21 +107,22 @@ For each task:
 
 The next real implementation target is:
 
-src/quantv2/backtest/simulator.py
+src/quantv2/experiments/run_experiment.py
 
-This module should provide a walk-forward baseline evaluation runner for research datasets.
+This module should add a full end-to-end walk-forward baseline experiment runner.
 
-The simulator layer must ensure:
+The experiment layer must ensure:
 
-- It uses existing walk-forward split logic.
-- It uses existing rule-based baseline prediction logic.
-- It uses existing prediction evaluation metrics.
-- It uses existing transaction-cost adjustment utilities.
-- It only evaluates test windows that occur after training windows.
-- It never trains on test data.
+- It uses the existing market data loader.
+- It optionally uses the existing event data loader.
+- It uses the existing feature matrix builder.
+- It optionally uses the existing event feature attachment logic.
+- It uses the existing event-study report builder.
+- It uses the existing walk-forward baseline evaluation runner.
+- It never duplicates feature, label, event, metric, cost, or simulator logic.
 - It never creates new labels from prices or future data.
 - It never connects to a brokerage.
 - It never creates live trades.
 - It never creates orders, executions, fills, positions, PnL, or profit claims.
-- It treats cost-adjusted outputs as research return estimates only.
-- It treats no-trade decisions as first-class outputs.
+- It returns clean DataFrames for research review.
+- It should make the QuantV2 MVP usable from CSV inputs.
