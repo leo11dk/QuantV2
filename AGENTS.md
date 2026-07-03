@@ -107,18 +107,19 @@ For each task:
 
 The next real implementation target is:
 
-src/quantv2/evaluation/prediction_metrics.py
+src/quantv2/backtest/costs.py
 
-This module should evaluate deterministic baseline predictions against existing forward-return label columns.
+This module should provide simple transaction-cost adjustment utilities for baseline prediction research.
 
-The prediction evaluation layer must ensure:
+The cost layer must ensure:
 
-- It only evaluates existing prediction columns and existing forward_return_Nd label columns.
+- It only adjusts existing signed forward-return style outputs.
 - It never creates new labels from prices or future data.
-- It never uses label_date columns as features.
 - It never trains a model.
 - It never creates live trades.
 - It never connects to a brokerage.
-- It treats no-trade decisions as first-class outputs.
-- It reports directional hit rate, coverage, trade count, no-trade count, and signed forward-return summaries.
-- It must not claim profitability, because transaction costs and execution simulation are not implemented yet.
+- It never simulates real execution yet.
+- It never creates PnL or profit claims.
+- It treats transaction costs as research assumptions, not guaranteed real execution costs.
+- It should support simple commission and slippage assumptions in basis points.
+- It should produce cost-adjusted directional return estimates for evaluation only.
