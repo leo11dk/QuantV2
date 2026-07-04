@@ -107,21 +107,19 @@ For each task:
 
 The next real implementation target is:
 
-src/quantv2/experiments/run_experiment.py
+src/quantv2/experiments/cli.py
 
-This module should add a saved end-to-end walk-forward baseline experiment runner.
+This module should provide a command-line interface for running the saved walk-forward baseline experiment from CSV inputs.
 
-The saved experiment runner must ensure:
+The CLI layer must ensure:
 
-- It uses the existing full walk-forward baseline experiment runner.
-- It uses the existing experiment registry.
-- It saves DataFrame outputs to a local experiment directory.
-- It writes a manifest through the registry layer.
+- It uses the existing saved walk-forward baseline experiment runner.
 - It never duplicates loader, feature, label, event, report, simulator, cost, metric, or registry logic.
-- It never creates new labels from prices or future data.
-- It never trains a model.
+- It accepts local CSV paths for market data and optional event data.
+- It writes outputs through the existing experiment registry.
+- It never fetches live data.
 - It never connects to a brokerage.
 - It never creates live trades.
 - It never creates orders, executions, fills, positions, PnL, or profit claims.
-- It returns both the in-memory results and the saved run directory.
-- It should make QuantV2 usable from CSV inputs with reproducible saved outputs.
+- It should print the saved run directory and basic artifact names.
+- It should be usable with python -m quantv2.experiments.cli.
