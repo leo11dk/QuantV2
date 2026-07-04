@@ -107,22 +107,20 @@ For each task:
 
 The next real implementation target is:
 
-src/quantv2/experiments/run_experiment.py
+src/quantv2/experiments/registry.py
 
-This module should add a full end-to-end walk-forward baseline experiment runner.
+This module should save experiment outputs and metadata for reproducible research.
 
-The experiment layer must ensure:
+The experiment registry layer must ensure:
 
-- It uses the existing market data loader.
-- It optionally uses the existing event data loader.
-- It uses the existing feature matrix builder.
-- It optionally uses the existing event feature attachment logic.
-- It uses the existing event-study report builder.
-- It uses the existing walk-forward baseline evaluation runner.
-- It never duplicates feature, label, event, metric, cost, or simulator logic.
-- It never creates new labels from prices or future data.
+- It saves DataFrame outputs from experiment runners to local files.
+- It writes a manifest file describing the run.
+- It records experiment name, run ID, created timestamp, metadata, artifact names, row counts, and columns.
+- It never fetches live data.
+- It never creates labels from prices or future data.
+- It never trains models.
 - It never connects to a brokerage.
 - It never creates live trades.
 - It never creates orders, executions, fills, positions, PnL, or profit claims.
-- It returns clean DataFrames for research review.
-- It should make the QuantV2 MVP usable from CSV inputs.
+- It must not mutate input DataFrames.
+- It should write only to local experiment output directories such as data/experiments.
