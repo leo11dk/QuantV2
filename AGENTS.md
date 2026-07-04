@@ -107,24 +107,21 @@ For each task:
 
 The next real implementation target is:
 
-src/quantv2/data/diagnostics.py
+src/quantv2/experiments/run_experiment.py
 
-This module should provide data-quality diagnostics for validated market data and research datasets.
+This module should integrate data-quality diagnostics into the saved walk-forward baseline experiment outputs.
 
-The diagnostics layer must ensure:
+The diagnostics integration layer must ensure:
 
-- It summarizes dataset shape, columns, date ranges, and ticker coverage.
-- It reports missing values by column.
-- It reports duplicate ticker/date or ticker/decision_date rows.
-- It reports date coverage by ticker.
-- It reports feature missingness.
-- It reports forward-return label missingness.
-- It reports optional event coverage.
-- It flags suspicious OHLCV rows when market data columns are present.
+- It uses the existing build_data_diagnostics function.
+- It never duplicates diagnostics logic.
+- It adds diagnostics for validated market_data.
+- It adds diagnostics for research_data.
+- It optionally adds diagnostics for event_data when event data is provided.
+- It saves diagnostics through the existing experiment registry.
 - It never creates new labels.
 - It never creates new features.
 - It never trains models.
-- It never creates trading signals.
 - It never connects to a brokerage.
 - It never creates live trades, orders, executions, fills, positions, PnL, or profit claims.
-- It should return DataFrames that can be saved or inspected.
+- It must preserve existing experiment runner behavior as much as possible.
