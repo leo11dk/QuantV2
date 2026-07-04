@@ -107,18 +107,24 @@ For each task:
 
 The next real implementation target is:
 
-.github/workflows/tests.yml
+src/quantv2/data/diagnostics.py
 
-This workflow should run the QuantV2 test suite automatically on GitHub.
+This module should provide data-quality diagnostics for validated market data and research datasets.
 
-The CI layer must ensure:
+The diagnostics layer must ensure:
 
-- It installs the package in editable mode.
-- It installs test dependencies.
-- It runs pytest.
-- It does not require local data files.
-- It does not require API keys.
-- It does not fetch market data.
-- It does not connect to a brokerage.
-- It does not run live trading logic.
-- It validates that the repo works from a clean checkout.
+- It summarizes dataset shape, columns, date ranges, and ticker coverage.
+- It reports missing values by column.
+- It reports duplicate ticker/date or ticker/decision_date rows.
+- It reports date coverage by ticker.
+- It reports feature missingness.
+- It reports forward-return label missingness.
+- It reports optional event coverage.
+- It flags suspicious OHLCV rows when market data columns are present.
+- It never creates new labels.
+- It never creates new features.
+- It never trains models.
+- It never creates trading signals.
+- It never connects to a brokerage.
+- It never creates live trades, orders, executions, fills, positions, PnL, or profit claims.
+- It should return DataFrames that can be saved or inspected.
