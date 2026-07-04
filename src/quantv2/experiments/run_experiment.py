@@ -8,6 +8,7 @@ from quantv2.backtest.simulator import run_walk_forward_baseline_evaluation
 from quantv2.data.event_data import load_event_data_csv
 from quantv2.data.market_data import load_market_data_csv
 from quantv2.evaluation.reports import build_event_study_report
+from quantv2.experiments.registry import save_experiment_results
 from quantv2.features.event_features import attach_event_features
 from quantv2.features.feature_matrix import build_feature_matrix
 
@@ -18,6 +19,12 @@ EVENT_REPORT_GROUPINGS = (
     ("event_type",),
     ("event_direction",),
     ("event_type", "event_direction"),
+)
+FORBIDDEN_PREDICTION_COLUMN_PREFIXES = (
+    "label_date_",
+    "forward_return_",
+    "signed_forward_return_",
+    "cost_adjusted_signed_forward_return_",
 )
 
 
@@ -137,3 +144,95 @@ def run_walk_forward_baseline_experiment(
         result["event_data"] = event_study_result["event_data"].copy(deep=True)
 
     return result
+
+
+def run_and_save_walk_forward_baseline_experiment(
+    market_data_path: str | Path,
+    event_data_path: str | Path | None = None,
+    output_dir: str | Path = "data/experiments",
+    experiment_name: str = "walk_forward_baseline",
+    metadata: dict | None = None,
+    run_id: str | None = None,
+    overwrite: bool = False,
+    horizons: tuple[int, ...] = (1, 3, 5),
+    return_windows: tuple[int, ...] = (5, 20),
+    volatility_window: int = 20,
+    report_groupings: tuple[tuple[str, ...], ...] | None = None,
+    include_overall: bool = True,
+    train_window: int = 252,
+    test_window: int = 21,
+    step_size: int | None = None,
+    min_train_size: int | None = None,
+    prediction_kwargs: dict | None = None,
+    cost_kwargs: dict | None = None,
+) -> tuple[dict[str, pd.DataFrame], Path]:
+    """Run and persist the MVP walk-forward baseline experiment.
+
+    This saved runner delegates all research logic to
+    ``run_walk_forward_baseline_experiment`` and all persistence logic to the
+    experiment registry. Cost-adjusted outputs are research return estimates,
+    not realized PnL or profit claims.
+    """
+    _validate_saved_prediction_kwargs(prediction_kwargs)
+
+    results = run_walk_forward_baseline_experiment(
+        market_data_path=market_data_path,
+        event_data_path=event_data_path,
+        horizons=horizons,
+        return_windows=return_windows,
+        volatility_window=volatility_window,
+        report_groupings=report_groupings,
+        include_overall=include_overall,
+        train_window=train_window,
+        test_window=test_window,
+        step_size=step_size,
+        min_train_size=min_train_size,
+        prediction_kwargs=prediction_kwargs,
+        cost_kwargs=cost_kwargs,
+    )
+
+    save_metadata = {} if metadata is None else dict(metadata)
+    run_metadata = {
+        "market_data_path": str(market_data_path),
+        "event_data_path": None if event_data_path is None else str(event_data_path),
+        "horizons": horizons,
+        "return_windows": return_windows,
+        "volatility_window": volatility_window,
+        "train_window": train_window,
+        "test_window": test_window,
+        "step_size": step_size,
+        "min_train_size": min_train_size,
+        "include_overall": include_overall,
+    }
+    for key, value in run_metadata.items():
+        save_metadata.setdefault(key, value)
+
+    run_dir = save_experiment_results(
+        results={
+            artifact_name: result.copy(deep=True)
+            for artifact_name, result in results.items()
+        },
+        output_dir=output_dir,
+        experiment_name=experiment_name,
+        metadata=save_metadata,
+        run_id=run_id,
+        overwrite=overwrite,
+    )
+
+    return results, run_dir
+
+
+def _validate_saved_prediction_kwargs(prediction_kwargs: dict | None) -> None:
+    if prediction_kwargs is None:
+        return
+
+    for key, column in dict(prediction_kwargs).items():
+        if not key.endswith("_col") or not isinstance(column, str):
+            continue
+        if column.startswith(FORBIDDEN_PREDICTION_COLUMN_PREFIXES) or (
+            column.startswith("close_") and column.endswith("d")
+        ):
+            raise ValueError(
+                "label and future outcome columns must not be used as "
+                f"prediction inputs: {column}"
+            )
