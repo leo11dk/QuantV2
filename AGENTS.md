@@ -107,18 +107,18 @@ For each task:
 
 The next real implementation target is:
 
-README.md
+.github/workflows/tests.yml
 
-The README should document the current QuantV2 workflow clearly enough that a user can set up the repo, run tests, create sample CSV inputs, run the CLI experiment, and inspect saved outputs.
+This workflow should run the QuantV2 test suite automatically on GitHub.
 
-The documentation layer must ensure:
+The CI layer must ensure:
 
-- It describes the current system accurately.
-- It does not claim profitability.
-- It does not imply live trading is implemented.
-- It does not imply brokerage integration is implemented.
-- It explains that outputs are research artifacts only.
-- It explains that cost-adjusted returns are simple research estimates, not real PnL.
-- It documents the point-in-time assumptions.
-- It documents the CLI usage.
-- It documents the expected saved artifacts.
+- It installs the package in editable mode.
+- It installs test dependencies.
+- It runs pytest.
+- It does not require local data files.
+- It does not require API keys.
+- It does not fetch market data.
+- It does not connect to a brokerage.
+- It does not run live trading logic.
+- It validates that the repo works from a clean checkout.
