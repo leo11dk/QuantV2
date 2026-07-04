@@ -173,7 +173,12 @@ def run_and_save_walk_forward_baseline_experiment(
     experiment registry. Cost-adjusted outputs are research return estimates,
     not realized PnL or profit claims.
     """
-    _validate_saved_prediction_kwargs(prediction_kwargs)
+    effective_prediction_kwargs = (
+        {} if prediction_kwargs is None else dict(prediction_kwargs)
+    )
+    effective_cost_kwargs = {} if cost_kwargs is None else dict(cost_kwargs)
+
+    _validate_saved_prediction_kwargs(effective_prediction_kwargs)
 
     results = run_walk_forward_baseline_experiment(
         market_data_path=market_data_path,
@@ -187,8 +192,8 @@ def run_and_save_walk_forward_baseline_experiment(
         test_window=test_window,
         step_size=step_size,
         min_train_size=min_train_size,
-        prediction_kwargs=prediction_kwargs,
-        cost_kwargs=cost_kwargs,
+        prediction_kwargs=effective_prediction_kwargs,
+        cost_kwargs=effective_cost_kwargs,
     )
 
     save_metadata = {} if metadata is None else dict(metadata)
@@ -203,9 +208,14 @@ def run_and_save_walk_forward_baseline_experiment(
         "step_size": step_size,
         "min_train_size": min_train_size,
         "include_overall": include_overall,
+        "report_groupings": _report_groupings_metadata(
+            report_groupings=report_groupings,
+            event_data_path=event_data_path,
+        ),
+        "prediction_kwargs": effective_prediction_kwargs,
+        "cost_kwargs": effective_cost_kwargs,
     }
-    for key, value in run_metadata.items():
-        save_metadata.setdefault(key, value)
+    save_metadata.update(run_metadata)
 
     run_dir = save_experiment_results(
         results={
@@ -220,6 +230,21 @@ def run_and_save_walk_forward_baseline_experiment(
     )
 
     return results, run_dir
+
+
+def _report_groupings_metadata(
+    report_groupings: tuple[tuple[str, ...], ...] | None,
+    event_data_path: str | Path | None,
+) -> list[list[str]]:
+    groupings = report_groupings
+    if groupings is None:
+        groupings = (
+            EVENT_REPORT_GROUPINGS
+            if event_data_path is not None
+            else MARKET_ONLY_REPORT_GROUPINGS
+        )
+
+    return [list(grouping) for grouping in groupings]
 
 
 def _validate_saved_prediction_kwargs(prediction_kwargs: dict | None) -> None:

@@ -196,6 +196,79 @@ def test_saved_runner_writes_metadata_without_mutating_input(
     assert manifest["metadata"]["step_size"] == 4
     assert manifest["metadata"]["min_train_size"] is None
     assert manifest["metadata"]["include_overall"] is True
+    assert manifest["metadata"]["report_groupings"] == [
+        ["ticker"],
+        ["event_type"],
+        ["event_direction"],
+        ["event_type", "event_direction"],
+    ]
+    assert manifest["metadata"]["prediction_kwargs"] == {}
+    assert manifest["metadata"]["cost_kwargs"] == {}
+
+
+def test_saved_runner_records_reproducibility_metadata_without_mutating_inputs(
+    tmp_path: Path,
+) -> None:
+    market_path = _write_market_csv(tmp_path)
+    event_path = _write_event_csv(tmp_path)
+    metadata = {
+        "source": "synthetic",
+        "horizons": ["user_override"],
+        "report_groupings": [["user_override"]],
+        "prediction_kwargs": {"user_override": True},
+        "cost_kwargs": {"user_override": True},
+    }
+    original_metadata = {
+        "source": "synthetic",
+        "horizons": ["user_override"],
+        "report_groupings": [["user_override"]],
+        "prediction_kwargs": {"user_override": True},
+        "cost_kwargs": {"user_override": True},
+    }
+    prediction_kwargs = {
+        "min_score_to_trade": 3,
+        "max_volatility": 0.99,
+    }
+    original_prediction_kwargs = {
+        "min_score_to_trade": 3,
+        "max_volatility": 0.99,
+    }
+    cost_kwargs = {
+        "commission_bps": 2.0,
+        "slippage_bps": 1.0,
+        "extra_cost_bps": 6.0,
+    }
+    original_cost_kwargs = {
+        "commission_bps": 2.0,
+        "slippage_bps": 1.0,
+        "extra_cost_bps": 6.0,
+    }
+
+    _, run_dir = run_and_save_walk_forward_baseline_experiment(
+        market_data_path=market_path,
+        event_data_path=event_path,
+        output_dir=tmp_path / "experiments",
+        metadata=metadata,
+        run_id="reproducibility_metadata",
+        horizons=(1, 3),
+        return_windows=(5, 20),
+        report_groupings=(("ticker", "event_type"),),
+        train_window=8,
+        test_window=4,
+        step_size=4,
+        prediction_kwargs=prediction_kwargs,
+        cost_kwargs=cost_kwargs,
+    )
+
+    manifest_metadata = _read_manifest(run_dir)["metadata"]
+    assert metadata == original_metadata
+    assert prediction_kwargs == original_prediction_kwargs
+    assert cost_kwargs == original_cost_kwargs
+    assert manifest_metadata["source"] == "synthetic"
+    assert manifest_metadata["horizons"] == [1, 3]
+    assert manifest_metadata["report_groupings"] == [["ticker", "event_type"]]
+    assert manifest_metadata["prediction_kwargs"] == original_prediction_kwargs
+    assert manifest_metadata["cost_kwargs"] == original_cost_kwargs
 
 
 def test_custom_run_id_and_overwrite_behaviors_use_registry(
