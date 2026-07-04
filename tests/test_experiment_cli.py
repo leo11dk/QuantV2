@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 import pandas as pd
@@ -6,7 +7,7 @@ import pytest
 from quantv2.experiments.cli import main
 
 
-EXPECTED_MARKET_ONLY_ARTIFACTS = {
+CORE_MARKET_ONLY_ARTIFACTS = {
     "market_data.csv",
     "feature_matrix.csv",
     "research_data.csv",
@@ -16,7 +17,37 @@ EXPECTED_MARKET_ONLY_ARTIFACTS = {
     "prediction_summary.csv",
     "cost_adjusted_summary.csv",
 }
-EXPECTED_EVENT_ARTIFACTS = {*EXPECTED_MARKET_ONLY_ARTIFACTS, "event_data.csv"}
+CORE_EVENT_ARTIFACTS = {*CORE_MARKET_ONLY_ARTIFACTS, "event_data.csv"}
+DIAGNOSTIC_SUFFIXES = (
+    "overview",
+    "missing_values",
+    "duplicates",
+    "ticker_coverage",
+    "feature_missingness",
+    "label_missingness",
+    "event_coverage",
+    "ohlcv_quality",
+)
+MARKET_DIAGNOSTIC_ARTIFACTS = {
+    f"market_diagnostics_{suffix}.csv" for suffix in DIAGNOSTIC_SUFFIXES
+}
+RESEARCH_DIAGNOSTIC_ARTIFACTS = {
+    f"research_diagnostics_{suffix}.csv" for suffix in DIAGNOSTIC_SUFFIXES
+}
+EVENT_DIAGNOSTIC_ARTIFACTS = {
+    f"event_diagnostics_{suffix}.csv" for suffix in DIAGNOSTIC_SUFFIXES
+}
+EXPECTED_MARKET_ONLY_ARTIFACTS = {
+    *CORE_MARKET_ONLY_ARTIFACTS,
+    *MARKET_DIAGNOSTIC_ARTIFACTS,
+    *RESEARCH_DIAGNOSTIC_ARTIFACTS,
+}
+EXPECTED_EVENT_ARTIFACTS = {
+    *CORE_EVENT_ARTIFACTS,
+    *MARKET_DIAGNOSTIC_ARTIFACTS,
+    *RESEARCH_DIAGNOSTIC_ARTIFACTS,
+    *EVENT_DIAGNOSTIC_ARTIFACTS,
+}
 FORBIDDEN_OUTPUT_COLUMNS = {
     "order",
     "execution",
@@ -113,6 +144,16 @@ def _artifact_names(run_dir: Path) -> set[str]:
     return {path.name for path in run_dir.glob("*.csv")}
 
 
+def _manifest_artifact_names(run_dir: Path) -> set[str]:
+    with (run_dir / "manifest.json").open(encoding="utf-8") as manifest_file:
+        manifest = json.load(manifest_file)
+    return {artifact["name"] for artifact in manifest["artifacts"]}
+
+
+def _artifact_keys(artifact_names: set[str]) -> set[str]:
+    return {Path(artifact_name).stem for artifact_name in artifact_names}
+
+
 def test_main_works_with_market_data_only_and_prints_outputs(
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
@@ -129,6 +170,13 @@ def test_main_works_with_market_data_only_and_prints_outputs(
     assert run_dir.is_dir()
     assert (run_dir / "manifest.json").is_file()
     assert _artifact_names(run_dir) == EXPECTED_MARKET_ONLY_ARTIFACTS
+    assert _manifest_artifact_names(run_dir) == _artifact_keys(
+        EXPECTED_MARKET_ONLY_ARTIFACTS
+    )
+    assert MARKET_DIAGNOSTIC_ARTIFACTS.issubset(_artifact_names(run_dir))
+    assert RESEARCH_DIAGNOSTIC_ARTIFACTS.issubset(_artifact_names(run_dir))
+    assert "event_data.csv" not in _artifact_names(run_dir)
+    assert EVENT_DIAGNOSTIC_ARTIFACTS.isdisjoint(_artifact_names(run_dir))
 
 
 def test_main_works_with_market_data_plus_event_data(tmp_path: Path) -> None:
@@ -145,6 +193,11 @@ def test_main_works_with_market_data_plus_event_data(tmp_path: Path) -> None:
     assert run_dir.is_dir()
     assert (run_dir / "manifest.json").is_file()
     assert _artifact_names(run_dir) == EXPECTED_EVENT_ARTIFACTS
+    assert _manifest_artifact_names(run_dir) == _artifact_keys(EXPECTED_EVENT_ARTIFACTS)
+    assert "event_data.csv" in _artifact_names(run_dir)
+    assert MARKET_DIAGNOSTIC_ARTIFACTS.issubset(_artifact_names(run_dir))
+    assert RESEARCH_DIAGNOSTIC_ARTIFACTS.issubset(_artifact_names(run_dir))
+    assert EVENT_DIAGNOSTIC_ARTIFACTS.issubset(_artifact_names(run_dir))
 
 
 def test_run_id_is_respected(tmp_path: Path) -> None:

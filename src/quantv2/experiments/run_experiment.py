@@ -5,6 +5,7 @@ from pathlib import Path
 import pandas as pd
 
 from quantv2.backtest.simulator import run_walk_forward_baseline_evaluation
+from quantv2.data.diagnostics import build_data_diagnostics
 from quantv2.data.event_data import load_event_data_csv
 from quantv2.data.market_data import load_market_data_csv
 from quantv2.evaluation.reports import build_event_study_report
@@ -25,6 +26,16 @@ FORBIDDEN_PREDICTION_COLUMN_PREFIXES = (
     "forward_return_",
     "signed_forward_return_",
     "cost_adjusted_signed_forward_return_",
+)
+DIAGNOSTIC_ARTIFACT_NAMES = (
+    "overview",
+    "missing_values",
+    "duplicates",
+    "ticker_coverage",
+    "feature_missingness",
+    "label_missingness",
+    "event_coverage",
+    "ohlcv_quality",
 )
 
 
@@ -195,6 +206,10 @@ def run_and_save_walk_forward_baseline_experiment(
         prediction_kwargs=effective_prediction_kwargs,
         cost_kwargs=effective_cost_kwargs,
     )
+    results = {
+        **results,
+        **_build_saved_data_diagnostics(results),
+    }
 
     save_metadata = {} if metadata is None else dict(metadata)
     run_metadata = {
@@ -230,6 +245,34 @@ def run_and_save_walk_forward_baseline_experiment(
     )
 
     return results, run_dir
+
+
+def _build_saved_data_diagnostics(
+    results: dict[str, pd.DataFrame],
+) -> dict[str, pd.DataFrame]:
+    diagnostics = {
+        **_build_prefixed_data_diagnostics(results["market_data"], "market"),
+        **_build_prefixed_data_diagnostics(results["research_data"], "research"),
+    }
+    if "event_data" in results:
+        diagnostics.update(
+            _build_prefixed_data_diagnostics(results["event_data"], "event")
+        )
+
+    return diagnostics
+
+
+def _build_prefixed_data_diagnostics(
+    data: pd.DataFrame,
+    prefix: str,
+) -> dict[str, pd.DataFrame]:
+    diagnostics = build_data_diagnostics(data)
+    return {
+        f"{prefix}_diagnostics_{artifact_name}": diagnostics[artifact_name].copy(
+            deep=True
+        )
+        for artifact_name in DIAGNOSTIC_ARTIFACT_NAMES
+    }
 
 
 def _report_groupings_metadata(

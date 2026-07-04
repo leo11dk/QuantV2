@@ -11,7 +11,7 @@ from quantv2.experiments.run_experiment import (
 )
 
 
-EXPECTED_MARKET_ONLY_KEYS = {
+CORE_MARKET_ONLY_KEYS = {
     "market_data",
     "feature_matrix",
     "research_data",
@@ -21,7 +21,50 @@ EXPECTED_MARKET_ONLY_KEYS = {
     "prediction_summary",
     "cost_adjusted_summary",
 }
-EXPECTED_EVENT_KEYS = {*EXPECTED_MARKET_ONLY_KEYS, "event_data"}
+CORE_EVENT_KEYS = {*CORE_MARKET_ONLY_KEYS, "event_data"}
+DIAGNOSTIC_SUFFIXES = (
+    "overview",
+    "missing_values",
+    "duplicates",
+    "ticker_coverage",
+    "feature_missingness",
+    "label_missingness",
+    "event_coverage",
+    "ohlcv_quality",
+)
+MARKET_DIAGNOSTIC_KEYS = {
+    f"market_diagnostics_{suffix}" for suffix in DIAGNOSTIC_SUFFIXES
+}
+RESEARCH_DIAGNOSTIC_KEYS = {
+    f"research_diagnostics_{suffix}" for suffix in DIAGNOSTIC_SUFFIXES
+}
+EVENT_DIAGNOSTIC_KEYS = {
+    f"event_diagnostics_{suffix}" for suffix in DIAGNOSTIC_SUFFIXES
+}
+EXPECTED_MARKET_ONLY_KEYS = {
+    *CORE_MARKET_ONLY_KEYS,
+    *MARKET_DIAGNOSTIC_KEYS,
+    *RESEARCH_DIAGNOSTIC_KEYS,
+}
+EXPECTED_EVENT_KEYS = {
+    *CORE_EVENT_KEYS,
+    *MARKET_DIAGNOSTIC_KEYS,
+    *RESEARCH_DIAGNOSTIC_KEYS,
+    *EVENT_DIAGNOSTIC_KEYS,
+}
+EVENT_COLUMNS = ("event_type", "event_direction", "event_severity")
+PRICE_FEATURE_COLUMNS = {
+    "prev_close",
+    "gap_pct",
+    "prior_5d_return",
+    "prior_20d_return",
+    "volatility_20d",
+}
+FORWARD_RETURN_COLUMNS = {
+    "forward_return_1d",
+    "forward_return_3d",
+    "forward_return_5d",
+}
 FORBIDDEN_OUTPUT_COLUMNS = {
     "order",
     "execution",
@@ -98,6 +141,10 @@ def _read_manifest(run_dir: Path) -> dict:
         return json.load(manifest_file)
 
 
+def _manifest_artifact_names(run_dir: Path) -> set[str]:
+    return {artifact["name"] for artifact in _read_manifest(run_dir)["artifacts"]}
+
+
 def _run_saved(
     tmp_path: Path,
     event_data_path: Path | None = None,
@@ -160,6 +207,83 @@ def test_saved_runner_works_with_market_data_plus_event_data(tmp_path: Path) -> 
     assert (run_dir / "manifest.json").is_file()
     assert (run_dir / "event_data.csv").is_file()
     _assert_saved_artifacts(run_dir, EXPECTED_EVENT_KEYS)
+
+
+def test_saved_runner_writes_market_and_research_diagnostics_without_events(
+    tmp_path: Path,
+) -> None:
+    results, run_dir = _run_saved(tmp_path, run_id="diagnostics_market_only")
+    manifest_artifact_names = _manifest_artifact_names(run_dir)
+    diagnostics_keys = MARKET_DIAGNOSTIC_KEYS | RESEARCH_DIAGNOSTIC_KEYS
+
+    assert diagnostics_keys.issubset(results)
+    assert diagnostics_keys.issubset(manifest_artifact_names)
+    assert EVENT_DIAGNOSTIC_KEYS.isdisjoint(results)
+    assert EVENT_DIAGNOSTIC_KEYS.isdisjoint(manifest_artifact_names)
+
+    for artifact_name in diagnostics_keys:
+        artifact_path = run_dir / f"{artifact_name}.csv"
+        assert artifact_path.is_file()
+        pd.read_csv(artifact_path)
+
+    for artifact_name in EVENT_DIAGNOSTIC_KEYS:
+        assert not (run_dir / f"{artifact_name}.csv").exists()
+
+    assert results["market_diagnostics_overview"].loc[0, "row_count"] == len(
+        results["market_data"]
+    )
+    assert results["research_diagnostics_overview"].loc[0, "row_count"] == len(
+        results["research_data"]
+    )
+    assert (run_dir / "market_diagnostics_ohlcv_quality.csv").is_file()
+
+
+def test_saved_runner_writes_event_diagnostics_when_event_data_is_provided(
+    tmp_path: Path,
+) -> None:
+    event_path = _write_event_csv(tmp_path)
+    results, run_dir = _run_saved(
+        tmp_path,
+        event_data_path=event_path,
+        run_id="diagnostics_with_events",
+    )
+    manifest_artifact_names = _manifest_artifact_names(run_dir)
+    diagnostics_keys = (
+        MARKET_DIAGNOSTIC_KEYS | RESEARCH_DIAGNOSTIC_KEYS | EVENT_DIAGNOSTIC_KEYS
+    )
+
+    assert diagnostics_keys.issubset(results)
+    assert diagnostics_keys.issubset(manifest_artifact_names)
+
+    for artifact_name in diagnostics_keys:
+        artifact_path = run_dir / f"{artifact_name}.csv"
+        assert artifact_path.is_file()
+        saved_frame = pd.read_csv(artifact_path)
+        assert saved_frame.columns.tolist() == results[artifact_name].columns.tolist()
+
+    assert results["market_diagnostics_overview"].loc[0, "row_count"] == len(
+        results["market_data"]
+    )
+    assert results["research_diagnostics_overview"].loc[0, "row_count"] == len(
+        results["research_data"]
+    )
+    assert results["event_diagnostics_overview"].loc[0, "row_count"] == len(
+        results["event_data"]
+    )
+
+    research_labels = set(results["research_diagnostics_label_missingness"]["label"])
+    research_features = set(
+        results["research_diagnostics_feature_missingness"]["feature"]
+    )
+    research_event_columns = set(
+        results["research_diagnostics_event_coverage"]["event_column"]
+    )
+
+    assert FORWARD_RETURN_COLUMNS.issubset(research_labels)
+    assert PRICE_FEATURE_COLUMNS.issubset(research_features)
+    assert set(EVENT_COLUMNS).issubset(research_event_columns)
+    assert "market_diagnostics_ohlcv_quality" in results
+    assert (run_dir / "market_diagnostics_ohlcv_quality.csv").is_file()
 
 
 def test_saved_runner_writes_metadata_without_mutating_input(
@@ -458,7 +582,8 @@ def test_existing_walk_forward_baseline_experiment_behavior_is_preserved(
         step_size=4,
     )
 
-    assert set(saved_results) == set(direct_results)
+    assert set(direct_results) == CORE_EVENT_KEYS
+    assert set(saved_results) == EXPECTED_EVENT_KEYS
     for artifact_name, direct_frame in direct_results.items():
         pd.testing.assert_frame_equal(saved_results[artifact_name], direct_frame)
 
