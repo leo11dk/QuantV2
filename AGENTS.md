@@ -107,19 +107,18 @@ For each task:
 
 The next real implementation target is:
 
-src/quantv2/experiments/cli.py
+README.md
 
-This module should provide a command-line interface for running the saved walk-forward baseline experiment from CSV inputs.
+The README should document the current QuantV2 workflow clearly enough that a user can set up the repo, run tests, create sample CSV inputs, run the CLI experiment, and inspect saved outputs.
 
-The CLI layer must ensure:
+The documentation layer must ensure:
 
-- It uses the existing saved walk-forward baseline experiment runner.
-- It never duplicates loader, feature, label, event, report, simulator, cost, metric, or registry logic.
-- It accepts local CSV paths for market data and optional event data.
-- It writes outputs through the existing experiment registry.
-- It never fetches live data.
-- It never connects to a brokerage.
-- It never creates live trades.
-- It never creates orders, executions, fills, positions, PnL, or profit claims.
-- It should print the saved run directory and basic artifact names.
-- It should be usable with python -m quantv2.experiments.cli.
+- It describes the current system accurately.
+- It does not claim profitability.
+- It does not imply live trading is implemented.
+- It does not imply brokerage integration is implemented.
+- It explains that outputs are research artifacts only.
+- It explains that cost-adjusted returns are simple research estimates, not real PnL.
+- It documents the point-in-time assumptions.
+- It documents the CLI usage.
+- It documents the expected saved artifacts.
