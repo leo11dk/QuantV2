@@ -14,19 +14,23 @@ Never use future data, revised data, final outcome data, or post-event knowledge
 
 ## Current MVP
 
-MVP 1 is complete enough to support an end-to-end event-study research loop.
+MVP 2 is complete enough to support deterministic rule-based prediction,
+walk-forward evaluation, cost-aware research summaries, saved experiments,
+diagnostics, CLI execution, and continuous integration.
 
-Current phase: MVP 2 — baseline prediction and honest walk-forward evaluation.
+Current phase: MVP 3 — leakage-safe learned baseline preparation.
 
-MVP 2 goals:
+MVP 3 goals:
 
-1. Walk-forward time-series splitting
-2. Rule-based baseline prediction
-3. Baseline prediction evaluation
-4. No-trade handling
-5. Simple cost-aware reporting
+1. Label-availability-aware walk-forward splitting
+2. Explicit model feature schemas
+3. A simple learned baseline model
+4. Walk-forward model fitting and evaluation
+5. Comparison against the deterministic rule baseline
+6. Calibration and no-trade threshold analysis
 
-Do not build live trading, brokerage integration, autonomous execution, complex AI reasoning, or historical analog models yet.
+Do not build live trading, brokerage integration, autonomous execution,
+complex AI reasoning, or historical analog models yet.
 
 ## Quant Rules
 
@@ -107,21 +111,22 @@ For each task:
 
 The next real implementation target is:
 
-src/quantv2/experiments/run_experiment.py
+src/quantv2/backtest/walk_forward.py
 
-This module should integrate data-quality diagnostics into the saved walk-forward baseline experiment outputs.
+This module should add label-availability-aware purged walk-forward splits
+without changing the existing walk-forward splitter.
 
-The diagnostics integration layer must ensure:
+The purged splitter must ensure:
 
-- It uses the existing build_data_diagnostics function.
-- It never duplicates diagnostics logic.
-- It adds diagnostics for validated market_data.
-- It adds diagnostics for research_data.
-- It optionally adds diagnostics for event_data when event data is provided.
-- It saves diagnostics through the existing experiment registry.
-- It never creates new labels.
-- It never creates new features.
-- It never trains models.
-- It never connects to a brokerage.
-- It never creates live trades, orders, executions, fills, positions, PnL, or profit claims.
-- It must preserve existing experiment runner behavior as much as possible.
+- Existing make_walk_forward_splits behavior remains unchanged.
+- Training rows are selected using decision_date.
+- A training row is usable only when its selected label date is known strictly
+  before the test window begins.
+- Training rows with missing label dates are purged.
+- Training labels that overlap the test period are purged.
+- Test rows are unchanged from the corresponding ordinary walk-forward split.
+- Multiple tickers are handled independently without cross-ticker leakage.
+- The input DataFrame is never mutated.
+- The splitter never creates labels, features, predictions, signals, trades,
+  orders, executions, positions, PnL, or profit claims.
+- The output should be suitable for a later learned baseline model.
